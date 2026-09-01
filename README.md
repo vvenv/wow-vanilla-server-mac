@@ -1,5 +1,7 @@
 # wow-vanilla-server-mac
 
+*中文 · [English](README.en.md)*
+
 在 macOS（Apple Silicon）上从零搭建一套本地 **World of Warcraft Vanilla 1.12.1** 私服 +
 可玩客户端，全程本地运行，不依赖任何外部托管。
 
