@@ -1,7 +1,7 @@
 # 客户端资源包来源与验证
 
-Wowee 这类原生客户端**不自带美术资源**，必须从一份合法取得的原版客户端提取 MPQ。
-Blizzard 不再分发旧版本，实际来源是第三方镜像。下面是实测结论。
+服务端要从 MPQ 提取 maps/vmaps/mmaps/dbc，客户端本身也要靠这批 MPQ 跑 —— 两边读的是
+同一份。Blizzard 不再分发旧版本，实际来源是第三方镜像。下面是实测结论。
 
 ## 先验证，再下载
 
@@ -38,9 +38,12 @@ patch-2.MPQ  sound.MPQ  speech.MPQ  terrain.MPQ  texture.MPQ  wmo.MPQ
 
 ## 一份资源，两处使用
 
-把客户端放进 `vmangos-deploy/storage/mangosd/client-data/`（内含 `Data/`），
-然后让客户端的资源提取器**指向同一个 `Data` 目录**。服务端提取器和客户端提取器
-读同一份 MPQ，省下约 5 GB 重复存储。
+把解压出来的客户端目录直接放进 `vmangos-deploy/storage/mangosd/client-data/`（内含
+`Data/`），再让 WoWSilicon 的 `game_path` **指向这同一个目录**（符号链接也可以，实测
+Wine 正常跑）。服务端提取器和游戏读同一份 MPQ，省下约 5 GB 重复存储。
+
+> 代价是这份 `Data/` 同时归两边管。往里丢美术补丁（`patch-A.MPQ`）会影响服务端的
+> vmap 提取 —— 见 `addons-and-mods.md`。
 
 ## 磁盘预算（Vanilla 1.12.1）
 
@@ -50,5 +53,6 @@ patch-2.MPQ  sound.MPQ  speech.MPQ  terrain.MPQ  texture.MPQ  wmo.MPQ
 | 解压后的客户端 | 5.5 GB |
 | 服务端 maps + vmaps + dbc | 0.9 GB |
 | 服务端 mmaps | 1.9 GB |
-| 客户端提取后的散文件资源 | 6.4 GB |
-| **合计** | **约 20 GB**（下载过程峰值 25 GB）|
+| **合计** | **约 14 GB**（下载过程峰值约 19 GB）|
+
+> 每多一种语言的客户端就再加约 5.5 GB —— `Data/` 的 MPQ 不能跨语言共享。

@@ -15,7 +15,7 @@
 所付出的代价：
 
 - **AzerothCore 不支持 Vanilla 1.12。** 它只有 WotLK 3.3.5a，没有 1.12 分支。这是最常见的
-  方向性错误，`SKILL.md` 第 0 步就强制先做版本路由。
+  方向性错误，`SKILL.md` 开头就把范围钉死在 VMaNGOS + 1.12.1，不再重开这个话题。
 - **`StrictVersionCheck = 0` 是任何非原版客户端的硬性前提。** 默认值 `1` 会校验客户端
   二进制的完整性哈希，重实现客户端算不出来，表现为 `Login failed: Version mismatch`——
   但 SRP6 密码校验其实是通过的，极易误判成账号问题。
@@ -25,6 +25,10 @@
   ZIP 的中央目录，甚至能抽出里面的 `README`/`SHA256SUMS`。很多"客户端"其实是 Windows
   安装程序（`setup-N.bin`），macOS 上根本解不开。
 - **`mmaps` 提取要几小时，但和登录无关**，可以拆开跑，先玩上再补。
+- **独占全屏在 Wine 下会挂死，而它偏偏是默认值。** 客户端退出时重写 `Config.wtf` 会把
+  `gxWindow` / `gxMaximize` 两行整个删掉，于是"什么都没改，下次开就全屏了"。
+- **1.12 没有 `gxMonitor`，副屏和 Space 只能在 macOS 那侧解。** 一条 `strings` 就能定案；
+  可行的两条路（辅助功能 API + 原生全屏 / 临时换主显示器）都只用公开 API，不需要关 SIP。
 
 ## 快速开始
 
@@ -39,16 +43,16 @@ git clone https://github.com/vvenv/wow-vanilla-server-mac ~/.claude/skills/vanil
 
 然后对 Claude Code 说：**「帮我在本地搭一个 Vanilla WoW 私服」**。
 
-手动使用则直接读 [`SKILL.md`](SKILL.md)，按 7 个步骤操作。
+手动使用则直接读 [`SKILL.md`](SKILL.md)，按 8 个步骤操作。
 
 ## 内容
 
 | 文件 | 说明 |
 |---|---|
-| [`SKILL.md`](SKILL.md) | 主流程：版本路由 → 环境勘察 → 下载 → 服务端 → 数据提取 → 客户端 → 建号 → 验证 |
-| [`references/client-sources.md`](references/client-sources.md) | 客户端资源包来源实测、下载前验证方法、磁盘预算 |
-| [`references/native-clients.md`](references/native-clients.md) | 客户端选型、WoWSilicon 安装接入、realmlist 与打补丁的坑 |
-| [`references/known-client-issues.md`](references/known-client-issues.md) | Wowee `classic` profile 缺陷、哪些能本地修、修法与移除方法 |
+| [`SKILL.md`](SKILL.md) | 主流程：环境勘察 → 下载 → 服务端 → 数据提取 → 客户端 → 建号 → 验证 → 上层玩法 |
+| [`references/client-data.md`](references/client-data.md) | 客户端资源包来源实测、下载前验证方法、磁盘预算 |
+| [`references/client-wine.md`](references/client-wine.md) | WoWSilicon 安装接入、realmlist 与打补丁的坑、窗口/全屏模式、让游戏开在副屏或独占一个 Space、`Config.wtf` 回写规则 |
+| [`references/addons-and-mods.md`](references/addons-and-mods.md) | 1.12 插件兼容规则、`dlls.txt` 的 DLL 加载链、`patch-?.MPQ` 美术补丁 |
 
 ### 脚本
 
@@ -63,9 +67,6 @@ git clone https://github.com/vvenv/wow-vanilla-server-mac ~/.claude/skills/vanil
 | `scripts/auth-check.py` | 独立 SRP6 客户端，端到端验证认证链路（不依赖游戏客户端） |
 | `scripts/wowsilicon-setup.sh` | 配置 WoWSilicon：realmlist 双处修改 + 补丁补齐 + 就绪检查 |
 | `scripts/wowsilicon-launch.sh` | 绕开启动器 UI 直接拉起游戏（Play 按钮静默失败时兜底） |
-| `scripts/make-incomplete-icon.py` | BLP2/DXT3 颜色端点改写，生成 vanilla 缺失的灰色任务图标 |
-| `scripts/gen-spellbook-filter.py` | 从 Spell.dbc 生成隐藏法术表，供技能书过滤 addon 使用 |
-| `scripts/manifest-add.py` | 把新增/修改的资源登记进客户端 `manifest.json`（CRC32） |
 
 ## 上游项目
 
@@ -74,7 +75,7 @@ git clone https://github.com/vvenv/wow-vanilla-server-mac ~/.claude/skills/vanil
 - [VMaNGOS](https://github.com/vmangos/core) —— Vanilla 服务端核心
 - [vmangos-deploy](https://github.com/mserajnik/vmangos-deploy) —— 提供 amd64/arm64 预编译镜像，免编译
 - [WoWSilicon](https://github.com/WoWSilicon/WoWSilicon) —— Apple Silicon 上跑原版客户端
-- [Wowee](https://github.com/Kelsidavis/WoWee) —— 从零重写的开源原生客户端
+- [Wowee](https://github.com/Kelsidavis/WoWee) —— 从零重写的开源原生客户端（已评估并放弃，原因见 `references/client-wine.md`）
 - [AzerothCore](https://github.com/azerothcore/azerothcore-wotlk) —— WotLK 3.3.5a 服务端（供版本路由参考）
 
 ## 关于游戏资源

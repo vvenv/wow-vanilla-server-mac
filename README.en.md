@@ -15,8 +15,8 @@ The setup itself is not hard. What is hard is that the information is scattered 
 it is stale. This repo records what it actually cost to get it working end to end:
 
 - **AzerothCore does not support Vanilla 1.12.** It is WotLK 3.3.5a only; there is no 1.12
-  branch. This is the most common wrong turn, so `SKILL.md` forces a version-routing decision
-  as step 0.
+  branch. This is the most common wrong turn, so `SKILL.md` pins the scope to VMaNGOS + 1.12.1
+  up front and refuses to re-open it.
 - **`StrictVersionCheck = 0` is mandatory for any non-original client.** The default `1`
   verifies the client binary's integrity hash, which a reimplementation cannot produce. It
   surfaces as `Login failed: Version mismatch` — but SRP6 password auth actually *passed*,
@@ -30,6 +30,13 @@ it is stale. This repo records what it actually cost to get it working end to en
   Windows installers (`setup-N.bin`) that macOS cannot extract at all.
 - **`mmaps` extraction takes hours but has nothing to do with logging in.** Split it off, play
   first, backfill pathfinding later.
+- **Exclusive fullscreen hangs under Wine, and it is the default.** The client rewrites
+  `Config.wtf` on exit and drops `gxWindow`/`gxMaximize` entirely, so "it went fullscreen by
+  itself" happens on its own.
+- **1.12 has no `gxMonitor`, so which display — or Space — the game opens on has to be solved
+  on the macOS side.** One `strings` call settles it; both workable routes (Accessibility API
+  plus native fullscreen, or temporarily remapping the main display) use public APIs only and
+  need no SIP changes.
 
 ## Quick start
 
@@ -44,7 +51,7 @@ git clone https://github.com/vvenv/wow-vanilla-server-mac ~/.claude/skills/vanil
 
 Then tell Claude Code: **"set up a local Vanilla WoW private server"**.
 
-To follow it by hand, read [`SKILL.md`](SKILL.md) and work through its seven steps.
+To follow it by hand, read [`SKILL.md`](SKILL.md) and work through its eight steps.
 
 > The prose in `SKILL.md` is English; the reference documents and script comments are Chinese.
 
@@ -52,10 +59,10 @@ To follow it by hand, read [`SKILL.md`](SKILL.md) and work through its seven ste
 
 | File | What it covers |
 |---|---|
-| [`SKILL.md`](SKILL.md) | Main workflow: version routing → survey → download → server → data extraction → client → account → verification |
-| [`references/client-sources.md`](references/client-sources.md) | Vetted client packages, how to verify one before downloading, disk budget |
-| [`references/native-clients.md`](references/native-clients.md) | Client landscape, WoWSilicon install and wiring, realmlist and patching pitfalls |
-| [`references/known-client-issues.md`](references/known-client-issues.md) | Wowee `classic` profile defects — which are locally fixable, the fixes, and how to remove them |
+| [`SKILL.md`](SKILL.md) | Main workflow: survey → download → server → data extraction → client → account → verification → the layers on top |
+| [`references/client-data.md`](references/client-data.md) | Vetted client packages, how to verify one before downloading, disk budget |
+| [`references/client-wine.md`](references/client-wine.md) | WoWSilicon install and wiring, realmlist and patching pitfalls, window/fullscreen mode, putting the game on a second display or in its own Space, `Config.wtf` rewrite rules |
+| [`references/addons-and-mods.md`](references/addons-and-mods.md) | 1.12 addon compatibility rules, the `dlls.txt` DLL load chain, `patch-?.MPQ` art patches |
 
 ### Scripts
 
@@ -70,9 +77,6 @@ To follow it by hand, read [`SKILL.md`](SKILL.md) and work through its seven ste
 | `scripts/auth-check.py` | Standalone SRP6 client that verifies the whole auth chain without a game client |
 | `scripts/wowsilicon-setup.sh` | Wire up WoWSilicon: realmlist (both places) + patches + readiness check |
 | `scripts/wowsilicon-launch.sh` | Launch the game directly, bypassing the launcher UI when Play silently no-ops |
-| `scripts/make-incomplete-icon.py` | Rewrite BLP2/DXT3 colour endpoints to synthesise the grey quest icon Vanilla lacks |
-| `scripts/gen-spellbook-filter.py` | Build the hidden-spell tables from Spell.dbc for the spellbook filter addon |
-| `scripts/manifest-add.py` | Register added or modified assets in the client's `manifest.json` (CRC32) |
 
 ## Upstream projects
 
@@ -81,7 +85,7 @@ This repo is only the process and the tooling. Every actual component comes from
 - [VMaNGOS](https://github.com/vmangos/core) — Vanilla server core
 - [vmangos-deploy](https://github.com/mserajnik/vmangos-deploy) — prebuilt amd64/arm64 images, no compiling
 - [WoWSilicon](https://github.com/WoWSilicon/WoWSilicon) — runs the original client on Apple Silicon
-- [Wowee](https://github.com/Kelsidavis/WoWee) — open-source native client written from scratch
+- [Wowee](https://github.com/Kelsidavis/WoWee) — open-source native client written from scratch (evaluated and dropped; see `references/client-wine.md`)
 - [AzerothCore](https://github.com/azerothcore/azerothcore-wotlk) — WotLK 3.3.5a server, referenced for version routing
 
 ## About game assets
