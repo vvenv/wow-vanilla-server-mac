@@ -236,6 +236,10 @@ When something looks broken, prove where it is before changing anything.
   no "own Space" setting, but the window it creates is an ordinary Cocoa window: the
   Accessibility API can move it (`AXPosition`) and full-screen it (`AXFullScreen`), and
   macOS creates the Space itself. Reach for the private/SIP-disabling APIs last, not first.
+- **A permission that looks granted may not be.** macOS TCC keys on the *designated
+  requirement*, and an ad-hoc signature's is a bare cdhash — so every rebuild silently
+  revokes Accessibility while the System Settings toggle still shows as on. `codesign -d -r-`
+  tells you which you have; a local self-signed certificate makes the grant stick.
 - **A message at the moment of death is not the cause of death.** `MachExc: PT_THUPDATE
   failed` is printed by the Rosetta shim while the process is already going away, so it shows
   up for unrelated failures. Look at what the client *wrote on its way out* instead.

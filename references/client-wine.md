@@ -194,8 +194,44 @@ after:  (0,0) 1920x1080        ← 全屏 Space 自己的坐标系
   明确排除 maximized 的窗口，无边框满屏拿不到全屏按钮。所以「无边框满屏」这个选项在这条路上
   写的是窗口 cvar，满屏是一会儿交给 macOS 做的。
 - **需要辅助功能授权**（`AXIsProcessTrusted()` 先查；`AXIsProcessTrustedWithOptions` 带
-  `kAXTrustedCheckOptionPrompt` 可以弹一次系统对话框）。ad-hoc 签名的壳**每次重新编译都会
-  掉授权** —— TCC 记的是 cdhash。界面上得有个地方显示当前状态，否则用户只会觉得"忽然不灵了"。
+  `kAXTrustedCheckOptionPrompt` 可以弹一次系统对话框，顺带把 app 加进设置里那张列表）。
+
+### ⚠️ ad-hoc 签名的壳每次重新编译都会掉辅助功能授权
+
+TCC 记的不是路径也不是 bundle id，是**指定要求**。ad-hoc 签名（`codesign -s -`）的指定要求
+是一串 cdhash：
+
+```sh
+codesign -d -r- WoW.app
+# designated => cdhash H"a9c806b081e2ccf0acf2a055936eaa185fc45b51"
+```
+
+二进制一变 cdhash 就变，授权立刻失效，而且**系统设置里那个开关看着还是开的** —— 这是最
+坑的地方，看起来一切正常，功能就是不灵。
+
+**解法是用一张本机自签的证书签名**，指定要求就变成跟证书绑定，重新编译多少次都不掉：
+
+```sh
+# 造证书（codeSigning EKU 必须有）
+openssl req -x509 -newkey rsa:2048 -nodes -days 7300 -keyout cs.key -out cs.crt -config cs.cnf
+
+# macOS 的 Security 框架读不了 LibreSSL 默认那套 PKCS#12 参数（导入时报
+# 「MAC verification failed」），必须指定老算法 + 非空密码
+openssl pkcs12 -export -out cs.p12 -inkey cs.key -in cs.crt -passout pass:xxx \
+  -macalg sha1 -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES
+security import cs.p12 -k ~/Library/Keychains/login.keychain-db -P xxx -T /usr/bin/codesign
+
+# 按 SHA-1 引用身份来签
+codesign --force --sign "$(openssl x509 -in cs.crt -noout -fingerprint -sha1 \
+  | sed 's/.*=//; s/://g')" WoW.app
+# designated => identifier "..." and certificate leaf = H"25674fc2..."
+```
+
+**不需要 sudo，也不需要 `add-trusted-cert`** —— `codesign` 按 SHA-1 引用身份时不要求这张
+自签根是受信任的。`security find-identity -p codesigning` 看不到它是正常的，不影响签名。
+
+换过签名方式之后先 `tccutil reset Accessibility <bundle-id>` 清掉旧要求的残留条目，
+再让 app 自己弹一次授权框。
 
 **尺寸要在起飞前就写成目标屏的桌面尺寸**：这样进全屏时内容区尺寸不变，客户端不用重建
 交换链，也就不会被 DXVK 拉伸糊掉。
