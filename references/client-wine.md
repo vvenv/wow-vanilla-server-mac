@@ -191,10 +191,17 @@ after:  (0,0) 1920x1080        ← 全屏 Space 自己的坐标系
 两个前提，都是硬的：
 
 - **必须窗口模式**（`gxWindow "1"` + `gxMaximize "0"`）。Wine 的 `adjustFullScreenBehavior:`
-  明确排除 maximized 的窗口，无边框满屏拿不到全屏按钮。
-- **需要辅助功能授权**（`AXIsProcessTrusted()` 先查）。
+  明确排除 maximized 的窗口，无边框满屏拿不到全屏按钮。所以「无边框满屏」这个选项在这条路上
+  写的是窗口 cvar，满屏是一会儿交给 macOS 做的。
+- **需要辅助功能授权**（`AXIsProcessTrusted()` 先查；`AXIsProcessTrustedWithOptions` 带
+  `kAXTrustedCheckOptionPrompt` 可以弹一次系统对话框）。ad-hoc 签名的壳**每次重新编译都会
+  掉授权** —— TCC 记的是 cdhash。界面上得有个地方显示当前状态，否则用户只会觉得"忽然不灵了"。
 
-好处是显示器排列一点都不用碰，菜单栏和 Dock 不搬家，启动器写完配置就能 `execv` 掉自己。
+**尺寸要在起飞前就写成目标屏的桌面尺寸**：这样进全屏时内容区尺寸不变，客户端不用重建
+交换链，也就不会被 DXVK 拉伸糊掉。
+
+好处是显示器排列一点都不用碰，菜单栏和 Dock 不搬家，启动器把窗口安顿好就能自己退掉，
+不用像换主显示器那条路一样守到游戏退出。
 
 ### ⚠️ 备选：临时把目标屏设成主显示器
 
