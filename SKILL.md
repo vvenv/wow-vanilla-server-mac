@@ -232,6 +232,14 @@ When something looks broken, prove where it is before changing anything.
   was settled in one command — `strings -a WoW_tweaked.exe | grep -oE '^gx[A-Za-z]+$'` lists
   every graphics cvar the build actually has. The same trick answers most "does 1.12 support
   X" questions faster than searching.
+- **No screen-recording permission is not the same as no eyes.** An app can always capture
+  its own views — `cacheDisplay` / `CALayer.render` are in-process and bypass TCC entirely.
+  Wire a signal handler that dumps a PNG, drive a synthetic press with `CGEvent`, and you can
+  inspect a pressed-state rendering bug frame by frame. Layout is separately checkable with
+  the Accessibility API, which reports every control's frame as numbers.
+- **Before blaming your own code, A/B it.** A hidden page rendering the same control six ways
+  (bare, wrapped, restyled, and the AppKit original) settled in one screenshot what two rounds
+  of blind fixes could not: the defect was in the platform, not the layout.
 - **When the app can't be told, tell macOS instead.** The client has no monitor setting and
   no "own Space" setting, but the window it creates is an ordinary Cocoa window: the
   Accessibility API can move it (`AXPosition`) and full-screen it (`AXFullScreen`), and
