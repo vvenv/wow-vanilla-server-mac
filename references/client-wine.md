@@ -188,6 +188,16 @@ after:  (0,0) 1920x1080        ← 全屏 Space 自己的坐标系
 `wine`、`kCGWindowLayer == 0` 的那个，再用 `AXUIElementCreateApplication(pid)` 拿
 `kAXWindowsAttribute`，挑能取到 `kAXFullScreenButtonAttribute` 的那一个。
 
+> ⚠️ **wine 不在前台的时候，`kAXWindows` 返回空数组。** 不是报错，`AXError` 就是
+> `.success`，只是 0 个窗口 —— 查不出任何毛病，看起来像「窗口还没出来」。启动器起完
+> 游戏通常会把自己收起来（切 accessory），游戏那个 app 从来没被激活过，于是轮询永远
+> 等不到窗口。**先 `NSRunningApplication(processIdentifier:)?.activate()` 再查。**
+> 反正玩家本来就要游戏在前台，不算副作用。
+
+`AXUIElementSetAttributeValue(win, "AXFullScreen", true)` 返回 `.success` 也只代表消息
+送到了，不代表窗口真进了全屏 —— 游戏刚起来那几秒 Wine 那边还在忙，会把这一下吃掉。
+**设完要回读确认，不成再试几次。**
+
 两个前提，都是硬的：
 
 - **必须窗口模式**（`gxWindow "1"` + `gxMaximize "0"`）。Wine 的 `adjustFullScreenBehavior:`
